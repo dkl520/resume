@@ -120,6 +120,35 @@
             font-weight: 600;
         }
         
+        /* 下载 PDF 按钮样式 - 固定在右下角 */
+        .download-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 14px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: #fff;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.6);
+            background: linear-gradient(135deg, #2980b9, #21618c);
+        }
+
+        .download-btn:active {
+            transform: translateY(0);
+        }
+        
         @media print {
             body {
                 padding: 0;
@@ -128,10 +157,18 @@
                 box-shadow: none;
                 padding: 0;
             }
+            .no-print {
+                display: none !important;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- 下载 PDF 按钮（固定在右下角，只在网页上显示，打印/PDF 中不会出现） -->
+    <button class="download-btn no-print" onclick="window.print()">
+        📄 Download PDF
+    </button>
+    
     <div class="letter">
         <div class="header">
             <div class="name">Kailong Duan</div>
