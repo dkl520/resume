@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cover Letter - Kailong Duan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* 全局变量：方便统一调整颜色 */
+        :root {
+            --primary-color: #0f172a; /* 深色主文字 */
+            --accent-color: #2563eb;  /* 科技蓝强调色 */
+            --bg-highlight: #f1f7ff;  /* 高亮区域背景 */
+            --text-secondary: #475569; /* 次要文字颜色 */
+            --paper-shadow: 0 10px 30px -10px rgba(0,0,0,0.15);
+        }
+
+        body {
+            background-color: #e2e8f0; /* 网页背景深灰，突出信纸 */
+            font-family: 'Inter', sans-serif;
+            color: var(--primary-color);
+            line-height: 1.7;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        /* 信纸容器设计 */
+        .page {
+            background: white;
+            width: 8.5in; /* 标准信纸宽度 */
+            max-width: 100%;
+            padding: 60px 70px;
+            box-shadow: var(--paper-shadow);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* 头部设计：左右布局 */
+        header {
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 30px;
+            margin-bottom: 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .header-left h1 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--primary-color);
+        }
+
+        .header-right {
+            text-align: right;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .header-right div {
+            margin-bottom: 4px;
+        }
+
+        .header-right a {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* 正文排版 */
+        .content {
+            font-size: 15px;
+            color: #334155;
+        }
+
+        .greeting {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        p {
+            margin-bottom: 18px;
+            text-align: justify; /* 两端对齐更整洁 */
+        }
+
+        /* 重点高亮区域美化 */
+        .highlight-section {
+            background-color: var(--bg-highlight);
+            border-left: 4px solid var(--accent-color);
+            padding: 20px 25px;
+            margin: 25px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .highlight-section ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .highlight-section li {
+            margin-bottom: 12px;
+            color: #334155;
+        }
+
+        .highlight-section li:last-child {
+            margin-bottom: 0;
+        }
+
+        strong {
+            color: var(--primary-color); /* 加粗文字使用深黑，增加对比度 */
+            font-weight: 600;
+        }
+
+        /* 结尾签名 */
+        .closing {
+            margin-top: 45px;
+            margin-bottom: 40px;
+        }
+
+        .signature {
+            font-family: 'Inter', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-color);
+            border-top: 1px solid #e2e8f0;
+            display: inline-block;
+            padding-top: 10px;
+            min-width: 200px;
+        }
+
+        /* 悬浮下载按钮 (打印时不显示) */
+        .download-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 12px 24px;
+            background: var(--accent-color);
+            color: white;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 1000;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5);
+        }
+
+        /* 打印适配 */
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+            .page {
+                width: 100%;
+                box-shadow: none;
+                padding: 0; /* 打印机自带页边距，此处设为0或微调 */
+                margin: 0;
+            }
+            .download-btn {
+                display: none;
+            }
+            /* 强制打印背景色 (Chrome/Safari) */
+            .highlight-section {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            /* 打印时使用标准页边距 */
+            @page {
+                margin: 0.8in;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="download-btn no-print" onclick="window.print()">
+        📄 Save as PDF
+    </button>
+    
+    <div class="page">
+        <header>
+            <div class="header-left">
+                <h1>Kailong Duan</h1>
+            </div>
+            <div class="header-right">
+                <div>Dallas, TX | Open to relocation within the United States</div>
+                <div>📧 <a href="mailto:dkl520sss@gmail.com">dkl520sss@gmail.com</a></div>
+            </div>
+        </header>
+        
+        <div class="content">
+            <div class="greeting">Dear Hiring Manager</div>
+            
+            <p>
+                With <strong>4 years of professional software engineering experience</strong> and a Master's degree in Software Engineering from SMU, I am writing to express my interest in the Software Engineer position on your team. Unlike typical new graduates, I offer the technical maturity to architect, build, and deploy enterprise-grade applications immediately.
+            </p>
+            
+            <p>
+                My technical foundation is truly full-stack, bridging the gap between complex backend logic, cloud infrastructure, and intuitive user interfaces:
+            </p>
+            
+            <div class="highlight-section">
+                <ul>
+                    <li><strong>Modern Front-End Engineering:</strong> I have extensive experience building responsive, high-performance web interfaces. In my previous roles, I leveraged both <strong>Vue.js</strong> and <strong>React.js</strong> alongside <strong>Tailwind CSS</strong> to develop modular Single Page Applications (SPAs). These solutions supported over 10,000 daily active users with seamless cross-browser compatibility.</li>
+                    <li><strong>Backend & Cloud Architecture:</strong> On the server side, I specialize in <strong>Java (Spring Boot)</strong> and <strong>Python</strong> to build scalable microservices. I have successfully deployed full-stack applications on <strong>AWS (using EC2, RDS, and S3)</strong>, optimizing high-traffic systems to handle peak loads of 500+ requests per second.</li>
+                    <li><strong>DevOps & Infrastructure:</strong> I believe in owning the entire software lifecycle. I am proficient in managing <strong>Linux</strong> environments and have engineered automated CI/CD pipelines using <strong>Jenkins, GitLab, and Docker</strong>. These optimizations reduced deployment lead times by <strong>35%</strong>.</li>
+                </ul>
+            </div>
+            
+            <p>
+                <strong>Adaptability & Continuous Innovation:</strong> My greatest asset is my ability to absorb new technologies instantly. For example, last winter I decided to expand my language toolkit. <strong>Leveraging my strong computer science foundation, I mastered Python syntax in just one day and was solving complex algorithmic problems within a week.</strong> Currently, I am applying this Python proficiency to develop experimental applications utilizing <strong>Large Language Models (LLMs)</strong>, ensuring my engineering toolkit remains at the cutting edge of industry trends.
+            </p>
+            
+            <p>
+                I am completing my Master's at <strong>Southern Methodist University</strong> and will be ready to join your team in <strong>May 2026</strong>. I hold <strong>STEM OPT work authorization valid for three years</strong>, allowing me to work in the U.S. without initial sponsorship. I am eager to leverage my full-stack experience to drive results for your organization.
+            </p>
+            
+            <div class="closing">
+                <p>Thank you for your time and consideration.</p>
+                <br>
+                <div class="signature-line">Sincerely,</div>
+                <div class="signature">Kailong Duan</div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
