@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kailong Duan — Full-Stack Engineer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold:    #F5A623;
+    --amber:   #F7C948;
+    --peach:   #FFD6B0;
+    --sky:     #C8E8FF;
+    --cream:   #FFFDF7;
+    --warm-white: rgba(255,253,247,0.72);
+    --glass:   rgba(255,255,255,0.55);
+    --glass-border: rgba(255,255,255,0.85);
+    --shadow:  rgba(200,140,40,0.18);
+    --text:    #2D2412;
+    --muted:   #7A6040;
+    --accent:  #E07B39;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #FFF8ED;
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── WebGL canvas ── */
+  #bg-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── Gradient overlay so text is always readable ── */
+  .gradient-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 80% 60% at 15% 20%, rgba(255,214,120,0.28) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 80% at 85% 80%, rgba(200,232,255,0.22) 0%, transparent 70%);
+  }
+
+  /* ── Page layout ── */
+  .page {
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* ── Glass card ── */
+  .glass {
+    background: var(--glass);
+    backdrop-filter: blur(22px) saturate(1.6);
+    -webkit-backdrop-filter: blur(22px) saturate(1.6);
+    border: 1.5px solid var(--glass-border);
+    border-radius: 24px;
+    box-shadow:
+      0 8px 40px var(--shadow),
+      0 1px 0 rgba(255,255,255,0.9) inset,
+      0 -1px 0 rgba(200,140,40,0.08) inset;
+    padding: 36px 40px;
+    margin-bottom: 24px;
+    transition: transform 0.35s cubic-bezier(.22,.68,0,1.2), box-shadow 0.35s;
+  }
+  .glass:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 20px 60px rgba(200,140,40,0.22),
+      0 1px 0 rgba(255,255,255,0.95) inset;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    text-align: center;
+    padding: 56px 40px 44px;
+    background: linear-gradient(135deg,
+      rgba(255,255,255,0.68) 0%,
+      rgba(255,240,190,0.55) 50%,
+      rgba(200,232,255,0.45) 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: -60px;
+    background:
+      radial-gradient(circle at 30% 30%, rgba(255,200,80,0.35) 0%, transparent 55%),
+      radial-gradient(circle at 80% 70%, rgba(160,210,255,0.3) 0%, transparent 55%);
+    filter: blur(30px);
+    z-index: -1;
+  }
+
+  .avatar-ring {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), var(--amber), #F9A8D4);
+    box-shadow: 0 4px 24px rgba(245,166,35,0.45);
+    margin-bottom: 20px;
+    font-size: 36px;
+    animation: spin-slow 12s linear infinite;
+  }
+  @keyframes spin-slow {
+    from { filter: hue-rotate(0deg); }
+    to   { filter: hue-rotate(30deg); }
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(120deg, #B35A00 0%, #E07B39 40%, #8B4513 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+
+  .hero .subtitle {
+    font-size: 1.05rem;
+    color: var(--muted);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .contact-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .contact-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.75);
+    border: 1px solid rgba(245,166,35,0.35);
+    font-size: 0.82rem;
+    color: var(--muted);
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  }
+  .contact-pill:hover {
+    background: rgba(255,220,100,0.4);
+    border-color: var(--gold);
+    transform: scale(1.05);
+    color: #7A4500;
+  }
+  .contact-pill svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  .summary-text {
+    font-size: 0.97rem;
+    line-height: 1.75;
+    color: #5A4020;
+    max-width: 620px;
+    margin: 0 auto;
+  }
+  .summary-text strong { color: var(--accent); font-weight: 600; }
+
+  /* ── Section title ── */
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .section-label h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.2px;
+  }
+  .section-label .line {
+    flex: 1;
+    height: 1.5px;
+    background: linear-gradient(90deg, rgba(245,169,35,0.6), transparent);
+  }
+  .section-label .icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--gold), var(--amber));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 3px 12px rgba(245,166,35,0.4);
+    flex-shrink: 0;
+  }
+
+  /* ── Experience item ── */
+  .exp-item {
+    padding: 24px 28px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.8);
+    margin-bottom: 16px;
+    transition: background 0.25s;
+  }
+  .exp-item:hover { background: rgba(255,248,220,0.65); }
+  .exp-item:last-child { margin-bottom: 0; }
+
+  .exp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .exp-company {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .exp-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    background: rgba(245,166,35,0.15);
+    border-radius: 999px;
+    padding: 3px 12px;
+    white-space: nowrap;
+  }
+  .exp-role {
+    font-size: 0.85rem;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .exp-loc {
+    font-size: 0.8rem;
+    color: #A07840;
+    margin-bottom: 12px;
+  }
+
+  .bullet-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .bullet-list li {
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: #4A3520;
+    padding-left: 18px;
+    position: relative;
+  }
+  .bullet-list li::before {
+    content: '◆';
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+    font-size: 0.55rem;
+    top: 5px;
+  }
+
+  /* ── Education ── */
+  .edu-item {
+    padding: 20px 24px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.8);
+    margin-bottom: 14px;
+  }
+  .edu-item:last-child { margin-bottom: 0; }
+  .edu-school {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .edu-degree {
+    font-size: 0.83rem;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .edu-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  /* ── Skills grid ── */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+  }
+  .skill-card {
+    background: rgba(255,255,255,0.55);
+    border: 1px solid rgba(255,255,255,0.85);
+    border-radius: 14px;
+    padding: 16px 20px;
+    transition: transform 0.25s, background 0.25s;
+  }
+  .skill-card:hover {
+    transform: translateY(-3px);
+    background: rgba(255,245,200,0.6);
+  }
+  .skill-cat {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .skill-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .tag {
+    font-size: 0.75rem;
+    background: linear-gradient(135deg, rgba(245,166,35,0.18), rgba(247,201,72,0.18));
+    border: 1px solid rgba(245,166,35,0.3);
+    border-radius: 6px;
+    padding: 3px 9px;
+    color: #7A4800;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+  }
+
+  /* ── Fade-in animation ── */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeUp 0.7s cubic-bezier(.22,.68,0,1.2) forwards;
+  }
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.22s; }
+  .delay-3 { animation-delay: 0.34s; }
+  .delay-4 { animation-delay: 0.46s; }
+
+  /* ── Liquid shimmer on hero ── */
+  .shimmer {
+    position: absolute;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,220,80,0.5), transparent 70%);
+    filter: blur(40px);
+    animation: float 6s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .shimmer:nth-child(2) { width: 150px; height: 150px; right: 60px; bottom: 30px; background: radial-gradient(circle, rgba(160,210,255,0.45), transparent 70%); animation-delay: -3s; animation-duration: 8s; }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-20px) scale(1.08); }
+  }
+
+  @media (max-width: 600px) {
+    .glass { padding: 24px 20px; }
+    .hero { padding: 36px 20px 28px; }
+    .skills-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div class="gradient-overlay"></div>
+
+<div class="page">
+
+  <!-- HERO -->
+  <div class="glass hero fade-up">
+    <div class="shimmer" style="left:40px;top:20px;"></div>
+    <div class="shimmer" style="right:60px;bottom:30px;"></div>
+    <div class="avatar-ring">☀️</div>
+    <h1>Kailong Duan</h1>
+    <p class="subtitle">Full-Stack Software Engineer</p>
+    <div class="contact-row">
+      <a href="mailto:kduan@mail.smu.edu" class="contact-pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+        kduan@mail.smu.edu
+      </a>
+      <a href="tel:4695448470" class="contact-pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 .99h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 15.92z"/></svg>
+        469-544-8470
+      </a>
+      <span class="contact-pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Dallas, TX · Open to Relocation
+      </span>
+      <a href="#" class="contact-pill">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a>
+      <a href="#" class="contact-pill">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        LinkedIn
+      </a>
+    </div>
+    <p class="summary-text">
+      Results-oriented <strong>Full-Stack Software Engineer</strong> with <strong>4 years</strong> of professional experience designing, developing, and deploying high-traffic enterprise applications. Proficient in <strong>Vue.js, React.js, TypeScript</strong> and <strong>Java / Spring Boot</strong> backends. Currently expanding ML &amp; NLP expertise. <strong>Seeking roles starting May 2026.</strong>
+    </p>
+  </div>
+
+  <!-- EXPERIENCE -->
+  <div class="glass fade-up delay-1">
+    <div class="section-label">
+      <div class="icon">💼</div>
+      <h2>Experience</h2>
+      <div class="line"></div>
+    </div>
+
+    <div class="exp-item">
+      <div class="exp-header">
+        <span class="exp-company">Truelore</span>
+        <span class="exp-date">2020 – 2022</span>
+      </div>
+      <div class="exp-role">Software Engineer</div>
+      <div class="exp-loc">📍 Beijing, China</div>
+      <ul class="bullet-list">
+        <li>Developed backend management systems and <strong>Spring Boot</strong>–based Java microservices with MySQL and Kafka; containerized services using Docker to deliver reliable core business functionality for enterprise applications.</li>
+        <li>Designed and implemented <strong>RESTful APIs</strong> with Docker-based packaging and deployment, enabling consistent communication between frontend and backend microservices while ensuring data integrity.</li>
+        <li>Optimized database performance through query optimization, indexing strategies, and transaction management; implemented a <strong>Redis</strong> caching system to significantly reduce database access.</li>
+        <li>Implemented secure authentication using <strong>JWT</strong> and Spring Security (RBAC).</li>
+      </ul>
+    </div>
+
+    <div class="exp-item">
+      <div class="exp-header">
+        <span class="exp-company">iSoftStone</span>
+        <span class="exp-date">Aug 2018 – Aug 2020</span>
+      </div>
+      <div class="exp-role">Software Engineer</div>
+      <div class="exp-loc">📍 Shenzhen, China</div>
+      <ul class="bullet-list">
+        <li>Developed mission-critical Single Page Applications (SPAs) and mobile features using <strong>Vue.js, React.js</strong>, Tailwind CSS, and TypeScript, delivering responsive and high-performance user interfaces.</li>
+        <li>Deployed frontend services with <strong>Nginx</strong>, implementing load balancing and caching strategies to improve high-traffic application performance and reduce end-to-end latency.</li>
+        <li>Established foundational <strong>CI/CD pipelines</strong> with Jenkins and GitLab, enabling automated builds, testing, and deployments while reducing manual errors.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- EDUCATION -->
+  <div class="glass fade-up delay-2">
+    <div class="section-label">
+      <div class="icon">🎓</div>
+      <h2>Education</h2>
+      <div class="line"></div>
+    </div>
+
+    <div class="edu-item">
+      <div class="exp-header">
+        <span class="edu-school">Southern Methodist University</span>
+        <span class="exp-date">May 2024 – May 2026</span>
+      </div>
+      <div class="edu-degree">M.S. in Software Engineering</div>
+      <div class="exp-loc">📍 Dallas, TX</div>
+      <ul class="bullet-list">
+        <li>Built and deployed a cloud-based application on <strong>AWS</strong> — React frontend via CloudFront &amp; S3, MySQL backend on AWS RDS.</li>
+        <li>Developed backend management systems using <strong>Django</strong> and Oracle as part of coursework and self-directed projects.</li>
+        <li>Built and trained ML models and reinforcement learning agents (Q-learning, DDPG, PPO) using TensorFlow, PyTorch, and OpenAI Gym. Currently researching <strong>RAGFlow</strong> for retrieval-augmented LLM workflows.</li>
+      </ul>
+    </div>
+
+    <div class="edu-item">
+      <div class="exp-header">
+        <span class="edu-school">Henan University of Economics and Law</span>
+        <span class="exp-date">Sep 2013 – Jun 2017</span>
+      </div>
+      <div class="edu-degree">B.S. in Science</div>
+      <div class="exp-loc">📍 Zhengzhou, China</div>
+    </div>
+  </div>
+
+  <!-- SKILLS -->
+  <div class="glass fade-up delay-3">
+    <div class="section-label">
+      <div class="icon">⚡</div>
+      <h2>Skills</h2>
+      <div class="line"></div>
+    </div>
+    <div class="skills-grid">
+      <div class="skill-card">
+        <div class="skill-cat">Languages</div>
+        <div class="skill-tags">
+          <span class="tag">Java</span><span class="tag">Python</span><span class="tag">JavaScript</span><span class="tag">TypeScript</span><span class="tag">SQL</span><span class="tag">HTML/CSS</span><span class="tag">WebGL</span>
+        </div>
+      </div>
+      <div class="skill-card">
+        <div class="skill-cat">Frameworks</div>
+        <div class="skill-tags">
+          <span class="tag">Spring Boot</span><span class="tag">React.js</span><span class="tag">Vue.js</span><span class="tag">Django</span><span class="tag">Tailwind</span>
+        </div>
+      </div>
+      <div class="skill-card">
+        <div class="skill-cat">Databases</div>
+        <div class="skill-tags">
+          <span class="tag">MySQL</span><span class="tag">Oracle</span><span class="tag">Redis</span>
+        </div>
+      </div>
+      <div class="skill-card">
+        <div class="skill-cat">Tools & DevOps</div>
+        <div class="skill-tags">
+          <span class="tag">Docker</span><span class="tag">Jenkins</span><span class="tag">GitLab</span><span class="tag">Nginx</span><span class="tag">Kafka</span><span class="tag">Linux</span>
+        </div>
+      </div>
+      <div class="skill-card">
+        <div class="skill-cat">Cloud (AWS)</div>
+        <div class="skill-tags">
+          <span class="tag">EC2</span><span class="tag">S3</span><span class="tag">CloudFront</span><span class="tag">RDS</span><span class="tag">Lambda</span>
+        </div>
+      </div>
+      <div class="skill-card">
+        <div class="skill-cat">AI / ML</div>
+        <div class="skill-tags">
+          <span class="tag">TensorFlow</span><span class="tag">PyTorch</span><span class="tag">OpenAI Gym</span><span class="tag">NLP</span><span class="tag">LLM</span><span class="tag">RAGFlow</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- ═══════════ WebGL Particle Background ═══════════ -->
+<script>
+(function(){
+  const canvas = document.getElementById('bg-canvas');
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if (!gl) return;
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  /* ── shaders ── */
+  const vSrc = `
+    attribute vec2 a_pos;
+    attribute float a_size;
+    attribute vec3 a_color;
+    attribute float a_alpha;
+    varying vec3 v_color;
+    varying float v_alpha;
+    uniform vec2 u_res;
+    void main() {
+      vec2 clip = (a_pos / u_res) * 2.0 - 1.0;
+      gl_Position = vec4(clip * vec2(1,-1), 0, 1);
+      gl_PointSize = a_size;
+      v_color = a_color;
+      v_alpha = a_alpha;
+    }
+  `;
+  const fSrc = `
+    precision mediump float;
+    varying vec3 v_color;
+    varying float v_alpha;
+    void main() {
+      vec2 uv = gl_PointCoord - 0.5;
+      float d = length(uv);
+      float s = 1.0 - smoothstep(0.3, 0.5, d);
+      gl_FragColor = vec4(v_color, v_alpha * s);
+    }
+  `;
+
+  function compile(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s); return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER,   vSrc));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, fSrc));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+
+  const aPos   = gl.getAttribLocation(prog, 'a_pos');
+  const aSize  = gl.getAttribLocation(prog, 'a_size');
+  const aColor = gl.getAttribLocation(prog, 'a_color');
+  const aAlpha = gl.getAttribLocation(prog, 'a_alpha');
+  const uRes   = gl.getUniformLocation(prog, 'u_res');
+
+  /* ── particles ── */
+  const N = 180;
+  const palette = [
+    [1.0, 0.85, 0.25],  // golden
+    [1.0, 0.75, 0.35],  // amber
+    [1.0, 0.92, 0.65],  // pale yellow
+    [0.72, 0.88, 1.0],  // sky blue
+    [1.0, 0.82, 0.68],  // peach
+    [1.0, 1.0, 0.80],   // cream
+  ];
+
+  const pos   = new Float32Array(N * 2);
+  const vel   = new Float32Array(N * 2);
+  const sizes = new Float32Array(N);
+  const colors= new Float32Array(N * 3);
+  const alphas= new Float32Array(N);
+  const phase = new Float32Array(N);
+
+  for (let i = 0; i < N; i++) {
+    pos[i*2]   = Math.random() * window.innerWidth;
+    pos[i*2+1] = Math.random() * window.innerHeight;
+    vel[i*2]   = (Math.random() - 0.5) * 0.35;
+    vel[i*2+1] = (Math.random() - 0.5) * 0.28 - 0.1; // slight upward drift
+    sizes[i]   = 4 + Math.random() * 22;
+    const c    = palette[Math.floor(Math.random() * palette.length)];
+    colors[i*3]   = c[0]; colors[i*3+1] = c[1]; colors[i*3+2] = c[2];
+    alphas[i]  = 0.18 + Math.random() * 0.38;
+    phase[i]   = Math.random() * Math.PI * 2;
+  }
+
+  /* buffers */
+  function mkBuf(data, usage) {
+    const b = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, b);
+    gl.bufferData(gl.ARRAY_BUFFER, data, usage || gl.DYNAMIC_DRAW);
+    return b;
+  }
+  const posBuf   = mkBuf(pos);
+  const sizeBuf  = mkBuf(sizes, gl.STATIC_DRAW);
+  const colorBuf = mkBuf(colors, gl.STATIC_DRAW);
+  const alphaBuf = mkBuf(alphas);
+
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+  let t = 0;
+  function draw() {
+    t += 0.012;
+    const W = canvas.width, H = canvas.height;
+
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.uniform2f(uRes, W, H);
+
+    /* update positions */
+    for (let i = 0; i < N; i++) {
+      pos[i*2]   += vel[i*2];
+      pos[i*2+1] += vel[i*2+1] + Math.sin(t + phase[i]) * 0.12;
+      alphas[i]   = (0.18 + Math.random()*0.38) * (0.7 + 0.3 * Math.sin(t * 0.7 + phase[i]));
+
+      // wrap
+      if (pos[i*2]   < -50)  pos[i*2]   = W + 50;
+      if (pos[i*2]   > W+50) pos[i*2]   = -50;
+      if (pos[i*2+1] < -50)  pos[i*2+1] = H + 50;
+      if (pos[i*2+1] > H+50) pos[i*2+1] = -50;
+    }
+
+    /* upload & draw */
+    gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, pos, gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, sizeBuf);
+    gl.enableVertexAttribArray(aSize);
+    gl.vertexAttribPointer(aSize, 1, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuf);
+    gl.enableVertexAttribArray(aColor);
+    gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, alphaBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, alphas, gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(aAlpha);
+    gl.vertexAttribPointer(aAlpha, 1, gl.FLOAT, false, 0, 0);
+
+    gl.drawArrays(gl.POINTS, 0, N);
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+
+</body>
+</html>
