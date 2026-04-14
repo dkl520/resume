@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kailong Duan — Full-Stack Engineer</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-deep:    #070f1e;
+  --bg-mid:     #0b1829;
+  --bg-light:   #0f2035;
+  --rain-blue:  #a8d4ff;
+  --ice:        #d6eeff;
+  --accent:     #5bb8ff;
+  --accent2:    #38cfcf;
+  --text:       rgba(220,240,255,0.92);
+  --muted:      rgba(160,200,240,0.60);
+  --glass-bg:   rgba(255,255,255,0.065);
+  --glass-top:  rgba(255,255,255,0.50);
+  --glass-side: rgba(255,255,255,0.20);
+  --glass-blur: 42px;
+  --shadow-col: rgba(0,20,60,0.60);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: linear-gradient(175deg,
+    var(--bg-deep) 0%,
+    var(--bg-mid)  40%,
+    #0d1f38        70%,
+    #111e35        100%);
+  min-height: 100vh;
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+/* ══════════════════════════════════════
+   WebGL canvas — fullscreen fixed rain
+══════════════════════════════════════ */
+#rain-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════
+   Fog/atmosphere layers
+══════════════════════════════════════ */
+.atmo {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%,   rgba(30,80,160,0.22) 0%, transparent 70%),
+    radial-gradient(ellipse 100% 30% at 50% 100%, rgba(0,0,30,0.55)   0%, transparent 70%);
+}
+
+/* ══════════════════════════════════════
+   CSS WATER DROPS on glass panels
+══════════════════════════════════════ */
+.drops-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+  z-index: 10;
+}
+.drop {
+  position: absolute;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(ellipse at 35% 30%,
+    rgba(255,255,255,0.55) 0%,
+    rgba(200,230,255,0.18) 45%,
+    rgba(180,220,255,0.07) 100%);
+  border: 0.5px solid rgba(255,255,255,0.35);
+  box-shadow:
+    inset 0 1px 2px rgba(255,255,255,0.5),
+    0 2px 8px rgba(0,20,60,0.3);
+  animation: drop-fall linear infinite;
+}
+/* 30 drops generated via JS */
+@keyframes drop-fall {
+  0%   { transform: translateY(-40px) scaleY(1);   opacity: 0; }
+  5%   { opacity: 1; }
+  80%  { transform: translateY(var(--fall-dist)) scaleY(1.15); opacity: 0.9; }
+  100% { transform: translateY(var(--fall-dist)) scaleY(0.2);  opacity: 0; }
+}
+.rivulet {
+  position: absolute;
+  width: 1.5px;
+  border-radius: 999px;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.0)  0%,
+    rgba(200,230,255,0.35) 30%,
+    rgba(200,230,255,0.15) 100%);
+  animation: rivulet-grow linear infinite;
+}
+@keyframes rivulet-grow {
+  0%   { transform: scaleY(0); transform-origin: top; opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: scaleY(1); transform-origin: top; opacity: 0; }
+}
+
+/* ══════════════════════════════════════
+   TRUE LIQUID GLASS card
+══════════════════════════════════════ */
+.glass {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(200%) brightness(1.15);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(200%) brightness(1.15);
+  border-radius: 22px;
+  border: 1px solid var(--glass-side);
+  border-top-color: var(--glass-top);
+  border-left-color: rgba(255,255,255,0.30);
+  box-shadow:
+    /* inner top highlight */
+    0  1px  0   rgba(255,255,255,0.40) inset,
+    /* inner left highlight */
+    1px 0   0   rgba(255,255,255,0.15) inset,
+    /* inner bottom shadow */
+    0  -1px 0   rgba(0,0,40,0.25)      inset,
+    /* outer depth shadow */
+    0  30px 80px var(--shadow-col),
+    0   8px 24px rgba(0,0,40,0.45),
+    /* blue glow */
+    0   0   40px rgba(30,100,220,0.08);
+  margin-bottom: 22px;
+  overflow: hidden;
+  transition: transform 0.4s cubic-bezier(.22,.68,0,1.15),
+              box-shadow 0.4s;
+}
+.glass:hover {
+  transform: translateY(-5px);
+  box-shadow:
+    0  1px  0   rgba(255,255,255,0.50) inset,
+    1px 0   0   rgba(255,255,255,0.18) inset,
+    0  -1px 0   rgba(0,0,40,0.25)      inset,
+    0  40px 100px rgba(0,0,40,0.7),
+    0  12px  32px rgba(0,0,40,0.50),
+    0   0   60px rgba(40,140,255,0.15);
+}
+
+/* Prismatic top-edge shimmer */
+.glass::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255,255,255,0.9) 30%,
+    rgba(150,220,255,0.95) 50%,
+    rgba(255,255,255,0.9) 70%,
+    transparent 100%);
+  z-index: 2;
+}
+
+/* Frosted inner gloss — top half */
+.glass::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 45%;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.055) 0%,
+    rgba(255,255,255,0.010) 50%,
+    transparent 100%);
+  border-radius: 22px 22px 0 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.glass-inner {
+  position: relative;
+  z-index: 3;
+  padding: 36px 42px;
+}
+
+/* ══════════════════════════════════════
+   Layout
+══════════════════════════════════════ */
+.page {
+  position: relative;
+  z-index: 2;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 52px 22px 100px;
+}
+
+/* ══════════════════════════════════════
+   HERO
+══════════════════════════════════════ */
+.hero-card {
+  background: linear-gradient(
+    145deg,
+    rgba(40, 110, 220, 0.12) 0%,
+    rgba(255,255,255,0.055)   40%,
+    rgba(30,  80, 180, 0.10)  100%
+  );
+}
+
+.hero-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 52px 42px 44px;
+}
+
+/* Glowing avatar */
+.avatar {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(80,170,255,0.35), rgba(50,200,200,0.30));
+  border: 1px solid rgba(255,255,255,0.40);
+  border-top-color: rgba(255,255,255,0.80);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 34px;
+  margin-bottom: 24px;
+  box-shadow:
+    0 0 0 8px rgba(80,150,255,0.08),
+    0 0 0 16px rgba(80,150,255,0.04),
+    0 8px 30px rgba(0,30,80,0.5);
+  animation: avatar-pulse 4s ease-in-out infinite;
+}
+@keyframes avatar-pulse {
+  0%, 100% { box-shadow: 0 0 0 8px rgba(80,150,255,0.08), 0 0 0 16px rgba(80,150,255,0.04), 0 8px 30px rgba(0,30,80,0.5); }
+  50%       { box-shadow: 0 0 0 10px rgba(80,150,255,0.14), 0 0 0 22px rgba(80,150,255,0.06), 0 8px 40px rgba(0,50,120,0.6); }
+}
+
+h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-shadow: 0 0 40px rgba(100,180,255,0.5), 0 2px 8px rgba(0,0,40,0.5);
+  margin-bottom: 6px;
+  line-height: 1.1;
+}
+
+.subtitle {
+  font-size: 0.82rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 500;
+  margin-bottom: 26px;
+  opacity: 0.9;
+}
+
+/* Contact pills */
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 15px;
+  border-radius: 999px;
+  /* liquid glass pill */
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-top-color: rgba(255,255,255,0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-size: 0.79rem;
+  color: var(--ice);
+  font-weight: 400;
+  text-decoration: none;
+  box-shadow: 0 2px 10px rgba(0,0,40,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.pill:hover {
+  background: rgba(80,180,255,0.15);
+  border-color: rgba(120,200,255,0.50);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 6px 20px rgba(0,20,80,0.4), inset 0 1px 0 rgba(255,255,255,0.4);
+  color: #fff;
+}
+.pill svg { width: 13px; height: 13px; opacity: 0.75; flex-shrink: 0; }
+
+.summary {
+  font-size: 0.9rem;
+  line-height: 1.85;
+  color: rgba(200,230,255,0.80);
+  max-width: 580px;
+}
+.summary strong { color: var(--accent); font-weight: 600; }
+
+/* ══════════════════════════════════════
+   Section label
+══════════════════════════════════════ */
+.sec-label {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 26px;
+}
+.sec-label h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.sec-label .bar {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(80,180,255,0.5), transparent);
+}
+.sec-icon {
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(80,160,255,0.3), rgba(40,200,200,0.25));
+  border: 1px solid rgba(255,255,255,0.25);
+  border-top-color: rgba(255,255,255,0.5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+  box-shadow: 0 4px 12px rgba(0,20,80,0.35), inset 0 1px 0 rgba(255,255,255,0.3);
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════
+   Experience / Education items
+══════════════════════════════════════ */
+.item {
+  padding: 22px 26px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-top-color: rgba(255,255,255,0.22);
+  margin-bottom: 14px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 16px rgba(0,0,40,0.3);
+  transition: background 0.25s, box-shadow 0.25s;
+}
+.item:hover {
+  background: rgba(80,160,255,0.07);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 24px rgba(0,20,80,0.4);
+}
+.item:last-child { margin-bottom: 0; }
+
+.item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.co-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.12rem;
+  font-weight: 600;
+  color: #fff;
+}
+.date-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.73rem;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: rgba(80,160,255,0.14);
+  border: 1px solid rgba(80,180,255,0.30);
+  color: var(--accent);
+  white-space: nowrap;
+}
+.role-tag {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent2);
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.loc-tag {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.bullets {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.bullets li {
+  font-size: 0.855rem;
+  line-height: 1.7;
+  color: rgba(190,220,255,0.80);
+  padding-left: 18px;
+  position: relative;
+}
+.bullets li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-size: 0.7rem;
+  top: 3px;
+}
+
+/* ══════════════════════════════════════
+   Skills grid
+══════════════════════════════════════ */
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  gap: 13px;
+}
+.skill-cell {
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-top-color: rgba(255,255,255,0.22);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 16px rgba(0,0,40,0.25);
+  transition: background 0.25s, transform 0.25s;
+}
+.skill-cell:hover {
+  background: rgba(60,150,255,0.09);
+  transform: translateY(-3px);
+}
+.skill-cat-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 9px;
+}
+.tag-wrap { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag {
+  font-size: 0.72rem;
+  font-family: 'DM Mono', monospace;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(80,160,255,0.12);
+  border: 1px solid rgba(80,180,255,0.22);
+  color: var(--ice);
+}
+
+/* ══════════════════════════════════════
+   Fade-in stagger
+══════════════════════════════════════ */
+.fade-up {
+  opacity: 0;
+  transform: translateY(28px);
+  animation: fu 0.75s cubic-bezier(.22,.68,0,1.15) forwards;
+}
+@keyframes fu { to { opacity:1; transform:translateY(0); } }
+.d1{animation-delay:.08s} .d2{animation-delay:.20s} .d3{animation-delay:.32s} .d4{animation-delay:.44s}
+
+/* ══════════════════════════════════════
+   Lightning flash
+══════════════════════════════════════ */
+.lightning {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: rgba(160,200,255,0.07);
+  opacity: 0;
+  animation: lightning 12s ease-in-out infinite;
+}
+@keyframes lightning {
+  0%,92%,96%,100% { opacity: 0; }
+  93%   { opacity: 1; }
+  94%   { opacity: 0; }
+  95%   { opacity: 0.6; }
+}
+
+@media (max-width: 600px) {
+  .glass-inner { padding: 24px 20px; }
+  .hero-inner   { padding: 36px 20px 30px; }
+  .skills-grid  { grid-template-columns: 1fr 1fr; }
+  .item { padding: 18px 18px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="rain-canvas"></canvas>
+<div class="atmo"></div>
+<div class="lightning"></div>
+
+<div class="page">
+
+  <!-- ── HERO ── -->
+  <div class="glass hero-card fade-up">
+    <div class="drops-layer" id="drops-hero"></div>
+    <div class="hero-inner">
+      <div class="avatar">🌧️</div>
+      <h1>Kailong Duan</h1>
+      <p class="subtitle">Full-Stack Software Engineer</p>
+
+      <div class="pills">
+        <a class="pill" href="mailto:kduan@mail.smu.edu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+          kduan@mail.smu.edu
+        </a>
+        <a class="pill" href="tel:4695448470">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 .99h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 15.92z"/></svg>
+          469-544-8470
+        </a>
+        <span class="pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Dallas, TX · Open to Relocation
+        </span>
+        <a class="pill" href="#">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          GitHub
+        </a>
+        <a class="pill" href="#">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          LinkedIn
+        </a>
+      </div>
+
+      <p class="summary">
+        Results-oriented <strong>Full-Stack Software Engineer</strong> with <strong>4 years</strong> of professional experience designing, developing and deploying high-traffic enterprise applications. Proficient in <strong>Vue.js, React.js, TypeScript</strong> front-ends and <strong>Java / Spring Boot</strong> microservice backends. Currently expanding ML &amp; NLP expertise. <strong>Seeking roles starting May 2026.</strong>
+      </p>
+    </div>
+  </div>
+
+  <!-- ── EXPERIENCE ── -->
+  <div class="glass fade-up d1">
+    <div class="drops-layer" id="drops-exp"></div>
+    <div class="glass-inner">
+      <div class="sec-label">
+        <div class="sec-icon">💼</div>
+        <h2>Experience</h2>
+        <div class="bar"></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head">
+          <span class="co-name">Truelore</span>
+          <span class="date-badge">2020 – 2022</span>
+        </div>
+        <div class="role-tag">Software Engineer</div>
+        <div class="loc-tag">📍 Beijing, China</div>
+        <ul class="bullets">
+          <li>Developed backend management systems and <strong>Spring Boot</strong>-based Java microservices with MySQL and Kafka; containerized services using Docker to deliver reliable core business functionality for enterprise applications.</li>
+          <li>Designed and implemented <strong>RESTful APIs</strong> with Docker-based packaging, enabling consistent communication between frontend and backend microservices while ensuring data integrity.</li>
+          <li>Optimized database performance via query optimization, indexing strategies and transaction management; implemented <strong>Redis</strong> caching layer to significantly reduce database access pressure.</li>
+          <li>Implemented secure authentication using <strong>JWT</strong> and Spring Security (RBAC).</li>
+        </ul>
+      </div>
+
+      <div class="item">
+        <div class="item-head">
+          <span class="co-name">iSoftStone</span>
+          <span class="date-badge">Aug 2018 – Aug 2020</span>
+        </div>
+        <div class="role-tag">Software Engineer</div>
+        <div class="loc-tag">📍 Shenzhen, China</div>
+        <ul class="bullets">
+          <li>Developed mission-critical Single Page Applications (SPAs) and mobile features using <strong>Vue.js, React.js</strong>, Tailwind CSS and TypeScript, delivering responsive and high-performance user interfaces.</li>
+          <li>Deployed frontend services with <strong>Nginx</strong>, implementing load balancing and caching strategies to improve high-traffic application performance and reduce end-to-end latency.</li>
+          <li>Established foundational <strong>CI/CD pipelines</strong> with Jenkins and GitLab, enabling automated builds, testing, and deployments while reducing manual errors.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── EDUCATION ── -->
+  <div class="glass fade-up d2">
+    <div class="drops-layer" id="drops-edu"></div>
+    <div class="glass-inner">
+      <div class="sec-label">
+        <div class="sec-icon">🎓</div>
+        <h2>Education</h2>
+        <div class="bar"></div>
+      </div>
+
+      <div class="item">
+        <div class="item-head">
+          <span class="co-name">Southern Methodist University</span>
+          <span class="date-badge">May 2024 – May 2026</span>
+        </div>
+        <div class="role-tag">M.S. in Software Engineering</div>
+        <div class="loc-tag">📍 Dallas, TX</div>
+        <ul class="bullets">
+          <li>Built and deployed a cloud-based application on <strong>AWS</strong> — React frontend via CloudFront &amp; S3, MySQL backend on AWS RDS.</li>
+          <li>Developed backend management systems using <strong>Django</strong> and Oracle as part of coursework and self-directed projects.</li>
+          <li>Built and trained ML models and reinforcement learning agents (Q-learning, DDPG, PPO) using TensorFlow, PyTorch and OpenAI Gym. Currently researching <strong>RAGFlow</strong> for retrieval-augmented LLM workflows.</li>
+        </ul>
+      </div>
+
+      <div class="item">
+        <div class="item-head">
+          <span class="co-name">Henan University of Economics and Law</span>
+          <span class="date-badge">Sep 2013 – Jun 2017</span>
+        </div>
+        <div class="role-tag">B.S. in Science</div>
+        <div class="loc-tag">📍 Zhengzhou, China</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SKILLS ── -->
+  <div class="glass fade-up d3">
+    <div class="drops-layer" id="drops-skills"></div>
+    <div class="glass-inner">
+      <div class="sec-label">
+        <div class="sec-icon">⚡</div>
+        <h2>Skills</h2>
+        <div class="bar"></div>
+      </div>
+      <div class="skills-grid">
+        <div class="skill-cell">
+          <div class="skill-cat-label">Languages</div>
+          <div class="tag-wrap">
+            <span class="tag">Java</span><span class="tag">Python</span><span class="tag">JavaScript</span><span class="tag">TypeScript</span><span class="tag">SQL</span><span class="tag">HTML/CSS</span><span class="tag">WebGL</span>
+          </div>
+        </div>
+        <div class="skill-cell">
+          <div class="skill-cat-label">Frameworks</div>
+          <div class="tag-wrap">
+            <span class="tag">Spring Boot</span><span class="tag">React.js</span><span class="tag">Vue.js</span><span class="tag">Django</span><span class="tag">Tailwind CSS</span>
+          </div>
+        </div>
+        <div class="skill-cell">
+          <div class="skill-cat-label">Databases</div>
+          <div class="tag-wrap">
+            <span class="tag">MySQL</span><span class="tag">Oracle</span><span class="tag">Redis</span>
+          </div>
+        </div>
+        <div class="skill-cell">
+          <div class="skill-cat-label">Tools & DevOps</div>
+          <div class="tag-wrap">
+            <span class="tag">Docker</span><span class="tag">Jenkins</span><span class="tag">GitLab</span><span class="tag">Nginx</span><span class="tag">Kafka</span><span class="tag">Linux</span>
+          </div>
+        </div>
+        <div class="skill-cell">
+          <div class="skill-cat-label">Cloud (AWS)</div>
+          <div class="tag-wrap">
+            <span class="tag">EC2</span><span class="tag">S3</span><span class="tag">CloudFront</span><span class="tag">RDS</span><span class="tag">Lambda</span>
+          </div>
+        </div>
+        <div class="skill-cell">
+          <div class="skill-cat-label">AI / ML</div>
+          <div class="tag-wrap">
+            <span class="tag">TensorFlow</span><span class="tag">PyTorch</span><span class="tag">OpenAI Gym</span><span class="tag">NLP</span><span class="tag">LLM</span><span class="tag">RAGFlow</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- ══════════════════════════════════════════════
+     WebGL RAIN SYSTEM
+══════════════════════════════════════════════ -->
+<script>
+/* ─── WebGL setup ─── */
+const canvas = document.getElementById('rain-canvas');
+const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+function resize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  if (gl) gl.viewport(0, 0, canvas.width, canvas.height);
+}
+resize();
+window.addEventListener('resize', resize);
+
+if (gl) {
+  /* ─── Shaders ─── */
+  const VS = `
+    precision mediump float;
+    attribute vec2 a_p0;
+    attribute vec2 a_p1;
+    attribute float a_t;     // 0=top vertex, 1=bottom vertex
+    attribute float a_alpha;
+    attribute float a_width;
+    uniform vec2  u_res;
+    varying float v_alpha;
+    varying float v_t;
+    void main() {
+      vec2 pos = mix(a_p0, a_p1, a_t);
+      vec2 clip = (pos / u_res) * 2.0 - 1.0;
+      gl_Position  = vec4(clip * vec2(1,-1), 0, 1);
+      gl_PointSize = a_width;
+      v_alpha = a_alpha;
+      v_t     = a_t;
+    }
+  `;
+  const FS = `
+    precision mediump float;
+    varying float v_alpha;
+    varying float v_t;
+    void main() {
+      // fade toward the top of the streak
+      float fade = mix(0.0, 1.0, v_t);
+      // slight blue tint
+      vec3 col = mix(vec3(0.65,0.85,1.0), vec3(0.85,0.95,1.0), v_t);
+      gl_FragColor = vec4(col, v_alpha * fade);
+    }
+  `;
+
+  function mkShader(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s); return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, mkShader(gl.VERTEX_SHADER,   VS));
+  gl.attachShader(prog, mkShader(gl.FRAGMENT_SHADER, FS));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+
+  const aP0    = gl.getAttribLocation(prog, 'a_p0');
+  const aP1    = gl.getAttribLocation(prog, 'a_p1');
+  const aT     = gl.getAttribLocation(prog, 'a_t');
+  const aAlpha = gl.getAttribLocation(prog, 'a_alpha');
+  const aWidth = gl.getAttribLocation(prog, 'a_width');
+  const uRes   = gl.getUniformLocation(prog, 'u_res');
+
+  /* ─── Rain layers ─── */
+  // angle ~ 15°  →  dx/dy = tan(15°) ≈ 0.268
+  const LAYERS = [
+    { n: 220, speed: 14, lenMin: 18, lenMax: 35, alphaMax: 0.18, wMin:0.5, wMax:1.0 }, // far
+    { n: 150, speed: 22, lenMin: 30, lenMax: 60, alphaMax: 0.35, wMin:0.8, wMax:1.5 }, // mid
+    { n:  80, speed: 30, lenMin: 50, lenMax: 90, alphaMax: 0.60, wMin:1.2, wMax:2.2 }, // near
+  ];
+
+  const DX_RATIO = 0.268; // horizontal drift per vertical unit (15° angle)
+
+  const drops = [];
+  LAYERS.forEach(L => {
+    for (let i = 0; i < L.n; i++) {
+      drops.push({
+        x:     Math.random() * (window.innerWidth  + 200) - 100,
+        y:     Math.random() * (window.innerHeight + 200) - 200,
+        speed: L.speed * (0.7 + Math.random() * 0.6),
+        len:   L.lenMin + Math.random() * (L.lenMax - L.lenMin),
+        alpha: L.alphaMax * (0.4 + Math.random() * 0.6),
+        width: L.wMin + Math.random() * (L.wMax - L.wMin),
+      });
+    }
+  });
+  const N = drops.length;
+
+  /* interleaved per-vertex: x0 y0  x1 y1  t  alpha  width  */
+  /* 2 vertices per drop → 7 floats each → 14 floats per drop */
+  const STRIDE_F = 7;
+  const buf_data = new Float32Array(N * 2 * STRIDE_F);
+  const vbo = gl.createBuffer();
+
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+  function frame() {
+    const W = canvas.width, H = canvas.height;
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.uniform2f(uRes, W, H);
+
+    /* update & pack */
+    for (let i = 0; i < N; i++) {
+      const d = drops[i];
+      d.y += d.speed;
+      d.x += d.speed * DX_RATIO;
+
+      // wrap
+      if (d.y - d.len > H + 20) {
+        d.y = -d.len - 10;
+        d.x = Math.random() * (W + 200) - 100;
+      }
+
+      // top vertex (t=0) = top of streak
+      const tx = d.x - d.len * DX_RATIO;
+      const ty = d.y - d.len;
+
+      const base = i * 2 * STRIDE_F;
+      // vertex 0 — top of streak
+      buf_data[base+0] = tx;  buf_data[base+1] = ty;
+      buf_data[base+2] = d.x; buf_data[base+3] = d.y;
+      buf_data[base+4] = 0.0; // t
+      buf_data[base+5] = d.alpha;
+      buf_data[base+6] = d.width;
+      // vertex 1 — bottom of streak
+      buf_data[base+7]  = tx;  buf_data[base+8]  = ty;
+      buf_data[base+9]  = d.x; buf_data[base+10] = d.y;
+      buf_data[base+11] = 1.0; // t
+      buf_data[base+12] = d.alpha;
+      buf_data[base+13] = d.width;
+    }
+
+    const BYTES = STRIDE_F * 4;
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, buf_data, gl.DYNAMIC_DRAW);
+
+    gl.enableVertexAttribArray(aP0);
+    gl.vertexAttribPointer(aP0, 2, gl.FLOAT, false, BYTES*2, 0);
+    // aP1 is at offset 8 bytes (2 floats after p0)
+    gl.enableVertexAttribArray(aP1);
+    gl.vertexAttribPointer(aP1, 2, gl.FLOAT, false, BYTES*2, 4*2);
+    // t at offset 16 bytes
+    gl.enableVertexAttribArray(aT);
+    gl.vertexAttribPointer(aT, 1, gl.FLOAT, false, BYTES*2, 4*4);
+    // alpha at 20
+    gl.enableVertexAttribArray(aAlpha);
+    gl.vertexAttribPointer(aAlpha, 1, gl.FLOAT, false, BYTES*2, 4*5);
+    // width at 24
+    gl.enableVertexAttribArray(aWidth);
+    gl.vertexAttribPointer(aWidth, 1, gl.FLOAT, false, BYTES*2, 4*6);
+
+    gl.drawArrays(gl.LINES, 0, N * 2);
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+/* ══════════════════════════════════════
+   CSS WATER DROPS on glass panels
+══════════════════════════════════════ */
+function spawnDrops(containerId, count) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const W = el.offsetWidth || 300;
+  const H = el.offsetHeight || 200;
+
+  for (let i = 0; i < count; i++) {
+    const isRivulet = Math.random() > 0.55;
+    const div = document.createElement('div');
+
+    if (isRivulet) {
+      div.className = 'rivulet';
+      const rvH = 40 + Math.random() * 80;
+      div.style.cssText = `
+        left:${Math.random()*90+5}%;
+        top:${Math.random()*40}%;
+        width:${0.8+Math.random()*1.2}px;
+        height:${rvH}px;
+        animation-duration:${2.5+Math.random()*3}s;
+        animation-delay:${Math.random()*5}s;
+        --fall-dist:${rvH}px;
+        opacity:0;
+      `;
+    } else {
+      div.className = 'drop';
+      const sz = 4 + Math.random() * 10;
+      const fallDist = H * 0.4 + Math.random() * H * 0.5;
+      div.style.cssText = `
+        left:${Math.random()*88+1}%;
+        top:${Math.random()*30}%;
+        width:${sz}px;
+        height:${sz*(0.8+Math.random()*0.6)}px;
+        animation-duration:${2+Math.random()*4}s;
+        animation-delay:${Math.random()*6}s;
+        --fall-dist:${fallDist}px;
+        opacity:0;
+      `;
+    }
+    el.appendChild(div);
+  }
+}
+
+// Wait for layout, then spawn drops
+window.addEventListener('load', () => {
+  spawnDrops('drops-hero',   22);
+  spawnDrops('drops-exp',    18);
+  spawnDrops('drops-edu',    14);
+  spawnDrops('drops-skills', 12);
+});
+</script>
+</body>
+</html>
